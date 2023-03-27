@@ -45,6 +45,8 @@ function validateOrder(order) {
         orderStatus: Joi.string().min(5).max(50).required(),
         orderTotal: Joi.number().required(),
     });
+
+    return schema.validate(order);
 }
 
 module.exports.Order = Order;

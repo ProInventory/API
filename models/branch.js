@@ -45,6 +45,8 @@ function validateBranch(branch) {
         email: Joi.string().min(5).max(255).required().email(),
         manager: Joi.string().min(5).max(255).required(),
     });
+
+    return schema.validate(branch);
 }
 
 module.exports.Branch = Branch;

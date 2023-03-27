@@ -36,6 +36,8 @@ function validateProduct(product) {
         price: Joi.number().required(),
         category: Joi.string().min(5).max(50).required(),
     });
+
+    return schema.validate(product);
 }
 
 module.exports.Product = Product;
