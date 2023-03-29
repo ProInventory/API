@@ -1,3 +1,5 @@
+const bcrypt = require("bcrypt");
+
 const { User, validate } = require("../models/user");
 
 exports.getUsers = async (req, res) => {
@@ -18,14 +20,29 @@ exports.createUser = async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const user = new User({
-        username: req.body.username,
-        email: req.body.email,
-        password: req.body.password,
-    });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
-    await user.save();
-    res.send(user);
+    try {
+        const user = new User({
+            username: req.body.username,
+            email: req.body.email,
+            password: hashedPassword,
+        });
+
+        await user.save();
+
+        res.json({
+            user: user._id,
+            username: user.username,
+            email: user.email,
+        });
+    } catch (err) {
+        if (err.code === 11000)
+            return res.status(400).json({ msg: "Email already exists." });
+
+        res.status(500).json({ msg: "Internal server error." });
+    }
 };
 
 exports.updateUser = async (req, res) => {
@@ -60,4 +77,22 @@ exports.deleteUser = async (req, res) => {
             .status(404)
             .send("The user with the given ID was not found.");
     res.send(user);
+};
+
+exports.loginUser = async (req, res) => {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user)
+        return res
+            .status(404)
+            .send("The user with the given email was not found.");
+
+    const validPassword = await bcrypt.compare(
+        req.body.password,
+        user.password
+    );
+
+    if (!validPassword)
+        return res.status(400).send("Invalid email or password.");
+
+    res.send(true);
 };
