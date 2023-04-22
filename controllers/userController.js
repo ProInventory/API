@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");
 
 const { User, validate } = require("../models/user");
 
@@ -46,28 +47,50 @@ exports.createUser = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-	if (!req.body.username || !req.body.email || !req.body.password)
-		return res.status(400).send("Missing required fields.");
+	const isValidId = mongoose.Types.ObjectId.isValid(req.params.id);
+	if (!isValidId) return res.status(400).send("Invalid user ID.");
 
-	const { error } = validate(req.body);
-	if (error) return res.status(400).send(error.details[0].message);
+	const result = await User.findById(req.params.id);
 
-	const user = await User.findByIdAndUpdate(
-		req.params.id,
-		{
-			username: req.body.username,
-			email: req.body.email,
-			password: req.body.password,
-		},
-		{ new: true }
-	);
-
-	if (!user)
+	if (!result)
 		return res
 			.status(404)
 			.send("The user with the given ID was not found.");
 
-	res.send(user);
+	if (!req.body.username && !req.body.email && !req.body.password)
+		return res.status(400).send("Missing required fields.");
+
+	if (req.body.username) {
+		const { error } = validate(req.body, ["email", "password"]);
+		if (error) return res.status(400).send(error.details[0].message);
+
+		await User.updateOne(
+			{ _id: req.params.id },
+			{ username: req.body.username }
+		);
+	}
+
+	if (req.body.email) {
+		const { error } = validate(req.body, ["username", "password"]);
+		if (error) return res.status(400).send(error.details[0].message);
+
+		await User.updateOne({ _id: req.params.id }, { email: req.body.email });
+	}
+
+	if (req.body.password) {
+		const { error } = validate(req.body, ["username", "email"]);
+		if (error) return res.status(400).send(error.details[0].message);
+
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+		await User.updateOne(
+			{ _id: req.params.id },
+			{ password: hashedPassword }
+		);
+	}
+
+	res.status(200).send("User updated successfully.");
 };
 
 exports.deleteUser = async (req, res) => {
