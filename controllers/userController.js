@@ -28,6 +28,7 @@ exports.createUser = async (req, res) => {
 		const user = new User({
 			username: req.body.username,
 			email: req.body.email,
+			isAdmin: req.body.isAdmin,
 			password: hashedPassword,
 		});
 
@@ -36,6 +37,7 @@ exports.createUser = async (req, res) => {
 		res.json({
 			user: user._id,
 			username: user.username,
+			isAdmin: user.isAdmin,
 			email: user.email,
 		});
 	} catch (err) {

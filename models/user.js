@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
 		maxlength: 255,
 		unique: true,
 	},
+	isAdmin: {
+		type: Boolean,
+		default: false,
+	},
 	password: {
 		type: String,
 		required: true,
@@ -34,6 +38,7 @@ function validateUser(user, ignore = []) {
 		email: ignore.includes("email")
 			? Joi.string().min(5).max(255).email()
 			: Joi.string().min(5).max(255).required().email(),
+		isAdmin: Joi.boolean(),
 		password: ignore.includes("password")
 			? Joi.string().min(5).max(255)
 			: Joi.string().min(5).max(255).required(),
