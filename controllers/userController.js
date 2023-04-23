@@ -41,8 +41,11 @@ exports.createUser = async (req, res) => {
 			email: user.email,
 		});
 	} catch (err) {
-		if (err.code === 11000)
+		if ("email" in err.keyValue) {
 			return res.status(400).send("Email already exists.");
+		} else if ("username" in err.keyValue) {
+			return res.status(400).send("Username already exists.");
+		}
 
 		res.status(500).send("Internal server error.");
 	}
@@ -59,7 +62,12 @@ exports.updateUser = async (req, res) => {
 			.status(404)
 			.send("The user with the given ID was not found.");
 
-	if (!req.body.username && !req.body.email && !req.body.password)
+	if (
+		!req.body.username &&
+		!req.body.email &&
+		!req.body.isAdmin &&
+		!req.body.password
+	)
 		return res.status(400).send("Missing required fields.");
 
 	if (req.body.username) {
@@ -77,6 +85,16 @@ exports.updateUser = async (req, res) => {
 		if (error) return res.status(400).send(error.details[0].message);
 
 		await User.updateOne({ _id: req.params.id }, { email: req.body.email });
+	}
+
+	if (req.body.isAdmin) {
+		const { error } = validate(req.body, ["username", "email", "password"]);
+		if (error) return res.status(400).send(error.details[0].message);
+
+		await User.updateOne(
+			{ _id: req.params.id },
+			{ isAdmin: req.body.isAdmin }
+		);
 	}
 
 	if (req.body.password) {
