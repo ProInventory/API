@@ -34,12 +34,7 @@ exports.createUser = async (req, res) => {
 
 		await user.save();
 
-		res.json({
-			user: user._id,
-			username: user.username,
-			isAdmin: user.isAdmin,
-			email: user.email,
-		});
+		res.send(user);
 	} catch (err) {
 		if ("email" in err.keyValue) {
 			return res.status(400).send("Email already exists.");
@@ -110,7 +105,9 @@ exports.updateUser = async (req, res) => {
 		);
 	}
 
-	res.status(200).send("User updated successfully.");
+	const user = await User.findById(req.params.id);
+
+	res.status(200).send(user);
 };
 
 exports.deleteUser = async (req, res) => {
